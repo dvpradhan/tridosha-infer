@@ -1,0 +1,50 @@
+{
+  "configVersion": "v3",
+  "app": {
+    "appId": 8675309,
+    "appName": "Tridosha Infer",
+    "appType": "app",
+    "version": {
+      "code": 1,
+      "name": "1.0.0"
+    },
+    "icon": "icon.png",
+    "vender": "Personal",
+    "description": "Infers Tridosha based on HR sensor"
+  },
+  "permissions": [
+    "data:user.hd.heart_rate"
+  ],
+  "runtime": {
+    "apiVersion": {
+      "compatible": "3.0.0",
+      "target": "3.0.0",
+      "minVersion": "3.0.0"
+    }
+  },
+  "targets": {
+    "default": {
+      "module": {
+        "page": {
+          "pages": [
+            "page/index"
+          ]
+        }
+      },
+      "platforms": [
+        {
+          "st": "s",
+          "dw": 390
+        }
+      ],
+      "designWidth": 390,
+      "designHeight": 450
+    }
+  },
+  "i18n": {
+    "en-US": {
+      "appName": "Tridosha Infer"
+    }
+  },
+  "defaultLanguage": "en-US"
+}
