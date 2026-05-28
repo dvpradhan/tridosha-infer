@@ -1,161 +1,83 @@
 import { createWidget, widget, prop, align, text_style } from '@zos/ui'
-import { HeartRate } from '@zos/sensor'
+import { push } from '@zos/router'
+import { localStorage } from '@zos/storage'
+import { showToast } from '@zos/interaction'
 
 Page({
   state: {
-    hrSensor: null,
-    hrBuffer: [],
-    maxSamples: 15,       // Width of our graph
-    hrValueWidget: null,
-    doshaWidget: null,
-    progressWidget: null,
-    graphDots: []         // Array to hold our plot line dots
+    historyWidget: null
   },
 
   build() {
-    // 1. App Title
-    createWidget(widget.TEXT, {
-      x: 0, y: 30, w: 390, h: 40,
-      color: 0xffffff, text_size: 22,
-      align_h: align.CENTER_H,
-      text: 'Tridosha Monitor'
-    })
+    createWidget(widget.TEXT, { x: 0, y: 50, w: 390, h: 40, color: 0x00ffcc, text_size: 28, align_h: align.CENTER_H, text: 'Prakriti Engine' })
+    createWidget(widget.TEXT, { x: 0, y: 100, w: 390, h: 30, color: 0x94a3b8, text_size: 18, align_h: align.CENTER_H, text: 'Select Calibration Time' })
 
-    // 2. Real-time HR Value
-    this.state.hrValueWidget = createWidget(widget.TEXT, {
-      x: 0, y: 70, w: 390, h: 50,
-      color: 0xff1a1a, text_size: 40,
-      align_h: align.CENTER_H,
-      text: '-- BPM'
-    })
+    createWidget(widget.FILL_RECT, { x: 45, y: 155, w: 300, h: 60, color: 0x4c1d95, radius: 30 }) 
+    createWidget(widget.BUTTON, { x: 45, y: 150, w: 300, h: 60, text: '10s - Rapid Test', text_size: 20, color: 0xffffff, normal_color: 0x8b5cf6, press_color: 0x5b21b6, radius: 30, click_func: () => { push({ url: 'page/scan', params: '10' }) } })
 
-    // 3. Progress Bar Background (Dark Grey)
-    createWidget(widget.FILL_RECT, {
-      x: 20, y: 135, w: 350, h: 8,
-      color: 0x333333, radius: 4
-    })
+    createWidget(widget.FILL_RECT, { x: 45, y: 235, w: 300, h: 60, color: 0x1e3a8a, radius: 30 })
+    createWidget(widget.BUTTON, { x: 45, y: 230, w: 300, h: 60, text: '30s - Quick Scan', text_size: 20, color: 0xffffff, normal_color: 0x3b82f6, press_color: 0x1e40af, radius: 30, click_func: () => { push({ url: 'page/scan', params: '30' }) } })
 
-    // 4. Progress Bar Fill (Starts at 0 width)
-    this.state.progressWidget = createWidget(widget.FILL_RECT, {
-      x: 20, y: 135, w: 0, h: 8,
-      color: 0x00ffcc, radius: 4
-    })
+    createWidget(widget.FILL_RECT, { x: 45, y: 315, w: 300, h: 60, color: 0x134e4a, radius: 30 })
+    createWidget(widget.BUTTON, { x: 45, y: 310, w: 300, h: 60, text: '45s - Standard', text_size: 20, color: 0xffffff, normal_color: 0x14b8a6, press_color: 0x0f766e, radius: 30, click_func: () => { push({ url: 'page/scan', params: '45' }) } })
 
-    // 5. Initialize Graph Plot "Line" (15 invisible dots waiting for data)
-    for (let i = 0; i < this.state.maxSamples; i++) {
-      const dot = createWidget(widget.FILL_RECT, {
-        x: 20 + (i * 23), // Space them evenly across 350px
-        y: 200,           // Default hidden position
-        w: 6, h: 6,       // Small square
-        color: 0xff0000,  // Red plot line color
-        radius: 3         // Makes it a circle
-      })
-      // Hide them initially
-      dot.setProperty(prop.VISIBILITY, false)
-      this.state.graphDots.push(dot)
-    }
+    createWidget(widget.FILL_RECT, { x: 45, y: 395, w: 300, h: 60, color: 0x064e3b, radius: 30 })
+    createWidget(widget.BUTTON, { x: 45, y: 390, w: 300, h: 60, text: '60s - Clinical', text_size: 20, color: 0xffffff, normal_color: 0x10b981, press_color: 0x047857, radius: 30, click_func: () => { push({ url: 'page/scan', params: '60' }) } })
 
-    // 6. Dosha Readout Box
-    this.state.doshaWidget = createWidget(widget.TEXT, {
-      x: 20, y: 250, w: 350, h: 180,
-      color: 0x00ffcc, text_size: 18,
-      align_h: align.CENTER_H,
-      text_style: text_style.WRAP,
-      text: 'Calibrating...\nWaiting for pulse.'
-    })
+    createWidget(widget.TEXT, { x: 0, y: 480, w: 390, h: 30, color: 0x64748b, text_size: 16, align_h: align.CENTER_H, text: '▼ Scroll to view Past History ▼' })
 
-    this.startHeartRateMonitoring()
-  },
-
-  startHeartRateMonitoring() {
-    this.state.hrSensor = new HeartRate()
+    createWidget(widget.TEXT, { x: 0, y: 540, w: 390, h: 40, color: 0xffffff, text_size: 26, align_h: align.CENTER_H, text: 'Recent Readings' })
+    createWidget(widget.FILL_RECT, { x: 145, y: 585, w: 100, h: 3, color: 0x94a3b8, radius: 2 })
     
-    const callback = () => {
-      const hr = this.state.hrSensor.getCurrent()
-      
-      if (hr > 0) {
-        this.state.hrValueWidget.setProperty(prop.TEXT, `${hr} BPM`)
-        this.processDoshaSample(hr)
-      } else {
-        this.state.hrValueWidget.setProperty(prop.TEXT, `Reading...`)
-      }
-    }
-
-    this.state.hrSensor.onCurrentChange(callback)
-  },
-
-  processDoshaSample(hr) {
-    this.state.hrBuffer.push(hr)
-    
-    if (this.state.hrBuffer.length > this.state.maxSamples) {
-      this.state.hrBuffer.shift()
-    }
-
-    // Update the visual components
-    this.updateProgressBar()
-    this.updateGraph()
-
-    // Run Diagnosis once we hit 10 samples
-    if (this.state.hrBuffer.length >= 10) {
-      const diagnosticText = this.calculateTridoshaInference()
-      this.state.doshaWidget.setProperty(prop.TEXT, diagnosticText)
-    } else {
-      const remaining = 10 - this.state.hrBuffer.length;
-      this.state.doshaWidget.setProperty(prop.TEXT, `Acquiring lock...\nNeed ${remaining} more steady beats.`)
-    }
-  },
-
-  updateProgressBar() {
-    // Calculate percentage (maxing out at 10 samples for the calculation lock)
-    let fillRatio = this.state.hrBuffer.length / 10
-    if (fillRatio > 1) fillRatio = 1 
-    
-    // Max width is 350px
-    const newWidth = Math.floor(350 * fillRatio)
-    this.state.progressWidget.setProperty(prop.W, newWidth)
-  },
-
-  updateGraph() {
-    // Map our HR values to Y coordinates on the screen.
-    // Let's assume a normal HR falls between 50 and 120.
-    // The graph bounding box is between Y=160 (top) and Y=230 (bottom).
-    const graphTop = 160
-    const graphHeight = 70
-    
-    this.state.hrBuffer.forEach((hr, index) => {
-      // Normalize the HR to a 0-1 percentage within our 50-120 bounds
-      let normalizedHR = (hr - 50) / 70
-      if (normalizedHR < 0) normalizedHR = 0
-      if (normalizedHR > 1) normalizedHR = 1
-      
-      // Invert it because Y=0 is the top of the screen
-      const yPos = Math.floor(graphTop + (graphHeight - (normalizedHR * graphHeight)))
-      
-      // Update the dot's position and make it visible
-      this.state.graphDots[index].setProperty(prop.Y, yPos)
-      this.state.graphDots[index].setProperty(prop.VISIBILITY, true)
+    // Standard Refresh Button
+    createWidget(widget.BUTTON, { 
+      x: 35, y: 610, w: 150, h: 40, text: '↻ Refresh', text_size: 16, color: 0xffffff, 
+      normal_color: 0x334155, press_color: 0x1e293b, radius: 20, 
+      click_func: () => { 
+        this.refreshHistory() 
+        showToast({ content: "Log Refreshed!" })
+      } 
     })
+
+    // Nuclear Option: The Cache Wiper
+    createWidget(widget.BUTTON, { 
+      x: 205, y: 610, w: 150, h: 40, text: '⚠️ Hard Reset', text_size: 16, color: 0xffaaaa, 
+      normal_color: 0x7f1d1d, press_color: 0x450a0a, radius: 20, 
+      click_func: () => { 
+        localStorage.clear() 
+        this.refreshHistory() // Updates the text block silently
+        showToast({ content: "Memory Wiped!" }) // Fires the correct popup instantly
+      } 
+    })
+
+    this.state.historyWidget = createWidget(widget.TEXT, { x: 20, y: 680, w: 350, h: 650, color: 0xe2e8f0, text_size: 22, text_style: text_style.WRAP, text: "Loading..." })
+    createWidget(widget.FILL_RECT, { x: 0, y: 1350, w: 390, h: 20, color: 0x000000 })
+
+    this.refreshHistory()
   },
 
-  calculateTridoshaInference() {
-    const sum = this.state.hrBuffer.reduce((a, b) => a + b, 0)
-    const avgHR = sum / this.state.hrBuffer.length
-
-    let diagnosis = ""
-    if (avgHR < 65) {
-      diagnosis = "Dominant: KAPHA\nPulse: Manduka (Frog)\nType: Slow, steady, soft."
-    } else if (avgHR >= 65 && avgHR <= 80) {
-      diagnosis = "Dominant: PITTA\nPulse: Mandoeka (Cat)\nType: Strong, rhythmic."
-    } else {
-      diagnosis = "Dominant: VATA\nPulse: Sarpa (Snake)\nType: Fast, fluctuating."
+  onShow() {
+    if (this.state.historyWidget) {
+      this.refreshHistory()
     }
-
-    return `Pulse Avg: ${Math.round(avgHR)}\n\n${diagnosis}`
   },
 
-  onDestroy() {
-    if (this.state.hrSensor) {
-      this.state.hrSensor.offCurrentChange()
+  // Notice we removed the popup logic from here to prevent collision!
+  refreshHistory() {
+    let historyText = "No records found.\nComplete a reading to save data."
+    let history = []
+    
+    for (let i = 0; i < 5; i++) {
+      try {
+        const val = localStorage.getItem('td_log_' + i)
+        if (val) history.push(String(val))
+      } catch (e) {}
     }
+    
+    if (history.length > 0) {
+      historyText = history.join('\n\n────────────────\n\n')
+    }
+    
+    this.state.historyWidget.setProperty(prop.TEXT, historyText)
   }
 })
