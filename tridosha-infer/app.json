@@ -5,15 +5,16 @@
     "appName": "Tridosha Infer",
     "appType": "app",
     "version": {
-      "code": 1,
-      "name": "1.0.0"
+      "code": 2,
+      "name": "2.0.0"
     },
     "icon": "icon.png",
     "vender": "Personal",
-    "description": "Infers Tridosha based on HR sensor"
+    "description": "Tridosha & Ojas Tracker"
   },
   "permissions": [
-    "data:user.hd.heart_rate"
+    "data:user.hd.heart_rate",
+    "device:os.bg_app"
   ],
   "runtime": {
     "apiVersion": {
@@ -30,6 +31,9 @@
             "page/index",
             "page/scan"
           ]
+        },
+        "app-side": {
+          "path": "app-side/index"
         }
       },
       "platforms": [
