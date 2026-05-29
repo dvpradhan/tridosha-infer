@@ -9,7 +9,8 @@ Page({
     hrValueWidget: null, hrvValueWidget: null, progressWidget: null, doshaMainWidget: null,
     doshaDetailWidget: null, symptomWidget: null, todoWidget: null, avoidWidget: null, graphSlices: [],
     raktaWidget: null, majjaWidget: null, rasaWidget: null,
-    raktaBar: null, majjaBar: null, rasaBar: null
+    raktaBar: null, majjaBar: null, rasaBar: null,
+    revealBtn: null, dhatusReady: false, dhatusRevealed: false, currentAnalysis: null
   },
 
   onInit(params) {
@@ -51,34 +52,83 @@ Page({
     createWidget(widget.TEXT, { x: 0, y: 1230, w: 390, h: 40, color: 0xffffff, text_size: 28, align_h: align.CENTER_H, text: 'Tissue Health (Dhatus)' })
     createWidget(widget.FILL_RECT, { x: 145, y: 1275, w: 100, h: 3, color: 0x8b5cf6, radius: 2 })
     
-    createWidget(widget.TEXT, { x: 25, y: 1310, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Rakta (Cardio/Blood)' })
-    createWidget(widget.FILL_RECT, { x: 25, y: 1345, w: 340, h: 12, color: 0x334155, radius: 6 })
-    this.state.raktaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1345, w: 0, h: 12, color: 0xff3366, radius: 6 })
-    this.state.raktaWidget = createWidget(widget.TEXT, { x: 25, y: 1365, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Calculating...' })
+    // --- THE INTERACTIVE REVEAL BUTTON ---
+    this.state.revealBtn = createWidget(widget.BUTTON, { 
+      x: 45, y: 1300, w: 300, h: 50, text: '🔒 Locked (Awaiting Scan)', text_size: 18, 
+      color: 0x94a3b8, normal_color: 0x1e293b, press_color: 0x1e293b, radius: 25,
+      click_func: () => {
+        if (!this.state.dhatusReady || this.state.dhatusRevealed) return
+        this.state.dhatusRevealed = true
+        
+        // Lock the button
+        this.state.revealBtn.setProperty(prop.TEXT, 'Analysis Complete')
+        this.state.revealBtn.setProperty(prop.NORMAL_COLOR, 0x334155)
+        
+        const analysis = this.state.currentAnalysis
+        this.state.raktaWidget.setProperty(prop.TEXT, `${analysis.raktaScore}% Vitality`)
+        this.state.majjaWidget.setProperty(prop.TEXT, `${analysis.majjaScore}% Resilience`)
+        this.state.rasaWidget.setProperty(prop.TEXT, `${analysis.rasaScore}% Hydration/Flow`)
 
-    createWidget(widget.TEXT, { x: 25, y: 1410, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Majja (Nervous System)' })
-    createWidget(widget.FILL_RECT, { x: 25, y: 1445, w: 340, h: 12, color: 0x334155, radius: 6 })
-    this.state.majjaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1445, w: 0, h: 12, color: 0x38bdf8, radius: 6 })
-    this.state.majjaWidget = createWidget(widget.TEXT, { x: 25, y: 1465, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Calculating...' })
+        const targetRakta = Math.floor(340 * (analysis.raktaScore / 100))
+        const targetMajja = Math.floor(340 * (analysis.majjaScore / 100))
+        const targetRasa = Math.floor(340 * (analysis.rasaScore / 100))
 
-    createWidget(widget.TEXT, { x: 25, y: 1510, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Rasa (Plasma/Lymph)' })
-    createWidget(widget.FILL_RECT, { x: 25, y: 1545, w: 340, h: 12, color: 0x334155, radius: 6 })
-    this.state.rasaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1545, w: 0, h: 12, color: 0x00ffcc, radius: 6 })
-    this.state.rasaWidget = createWidget(widget.TEXT, { x: 25, y: 1565, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Calculating...' })
+        let currentRakta = 0, currentMajja = 0, currentRasa = 0
+        const step = 20 
 
-    createWidget(widget.TEXT, { x: 0, y: 1640, w: 390, h: 40, color: 0xffffff, text_size: 28, align_h: align.CENTER_H, text: 'Current Symptoms' })
-    createWidget(widget.FILL_RECT, { x: 145, y: 1685, w: 100, h: 3, color: 0x38bdf8, radius: 2 })
-    createWidget(widget.FILL_RECT, { x: 15, y: 1710, w: 360, h: 340, color: 0x1e3a8a, radius: 12 }) 
-    this.state.symptomWidget = createWidget(widget.TEXT, { x: 25, y: 1725, w: 340, h: 310, color: 0xbfdbfe, text_size: 20, text_style: text_style.WRAP, text: 'Symptom breakdown will appear after scan.' })
+        const animTimer = setInterval(() => {
+          let isAnimating = false
 
-    createWidget(widget.TEXT, { x: 0, y: 2090, w: 390, h: 40, color: 0xffffff, text_size: 28, align_h: align.CENTER_H, text: 'Prescribed Routine' })
-    createWidget(widget.FILL_RECT, { x: 15, y: 2150, w: 360, h: 320, color: 0x064e3b, radius: 12 }) 
-    this.state.todoWidget = createWidget(widget.TEXT, { x: 25, y: 2165, w: 340, h: 290, color: 0xa7f3d0, text_size: 20, text_style: text_style.WRAP, text: '✅ TO-DO:\nWill appear after reading.' })
+          if (currentRakta < targetRakta) {
+            currentRakta = Math.min(currentRakta + step, targetRakta)
+            this.state.raktaBar.setProperty(prop.W, currentRakta)
+            isAnimating = true
+          }
+          if (currentMajja < targetMajja) {
+            currentMajja = Math.min(currentMajja + step, targetMajja)
+            this.state.majjaBar.setProperty(prop.W, currentMajja)
+            isAnimating = true
+          }
+          if (currentRasa < targetRasa) {
+            currentRasa = Math.min(currentRasa + step, targetRasa)
+            this.state.rasaBar.setProperty(prop.W, currentRasa)
+            isAnimating = true
+          }
+
+          if (!isAnimating) clearInterval(animTimer)
+        }, 50)
+      }
+    })
+
+    // SHIFTED Y-COORDINATES
+    createWidget(widget.TEXT, { x: 25, y: 1370, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Rakta (Cardio/Blood)' })
+    createWidget(widget.FILL_RECT, { x: 25, y: 1405, w: 340, h: 12, color: 0x334155, radius: 6 })
+    this.state.raktaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1405, w: 0, h: 12, color: 0xff3366, radius: 6 })
+    this.state.raktaWidget = createWidget(widget.TEXT, { x: 25, y: 1425, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Awaiting Reveal...' })
+
+    createWidget(widget.TEXT, { x: 25, y: 1470, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Majja (Nervous System)' })
+    createWidget(widget.FILL_RECT, { x: 25, y: 1505, w: 340, h: 12, color: 0x334155, radius: 6 })
+    this.state.majjaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1505, w: 0, h: 12, color: 0x38bdf8, radius: 6 })
+    this.state.majjaWidget = createWidget(widget.TEXT, { x: 25, y: 1525, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Awaiting Reveal...' })
+
+    createWidget(widget.TEXT, { x: 25, y: 1570, w: 340, h: 30, color: 0x94a3b8, text_size: 20, text: 'Rasa (Plasma/Lymph)' })
+    createWidget(widget.FILL_RECT, { x: 25, y: 1605, w: 340, h: 12, color: 0x334155, radius: 6 })
+    this.state.rasaBar = createWidget(widget.FILL_RECT, { x: 25, y: 1605, w: 0, h: 12, color: 0x00ffcc, radius: 6 })
+    this.state.rasaWidget = createWidget(widget.TEXT, { x: 25, y: 1625, w: 340, h: 30, color: 0xe2e8f0, text_size: 16, text: 'Awaiting Reveal...' })
+
+    createWidget(widget.TEXT, { x: 0, y: 1700, w: 390, h: 40, color: 0xffffff, text_size: 28, align_h: align.CENTER_H, text: 'Current Symptoms' })
+    createWidget(widget.FILL_RECT, { x: 145, y: 1745, w: 100, h: 3, color: 0x38bdf8, radius: 2 })
+    createWidget(widget.FILL_RECT, { x: 15, y: 1770, w: 360, h: 340, color: 0x1e3a8a, radius: 12 }) 
+    this.state.symptomWidget = createWidget(widget.TEXT, { x: 25, y: 1785, w: 340, h: 310, color: 0xbfdbfe, text_size: 20, text_style: text_style.WRAP, text: 'Symptom breakdown will appear after scan.' })
+
+    createWidget(widget.TEXT, { x: 0, y: 2150, w: 390, h: 40, color: 0xffffff, text_size: 28, align_h: align.CENTER_H, text: 'Prescribed Routine' })
+    createWidget(widget.FILL_RECT, { x: 15, y: 2210, w: 360, h: 320, color: 0x064e3b, radius: 12 }) 
+    this.state.todoWidget = createWidget(widget.TEXT, { x: 25, y: 2225, w: 340, h: 290, color: 0xa7f3d0, text_size: 20, text_style: text_style.WRAP, text: '✅ TO-DO:\nWill appear after reading.' })
     
-    createWidget(widget.FILL_RECT, { x: 15, y: 2490, w: 360, h: 320, color: 0x7f1d1d, radius: 12 }) 
-    this.state.avoidWidget = createWidget(widget.TEXT, { x: 25, y: 2505, w: 340, h: 290, color: 0xfecaca, text_size: 20, text_style: text_style.WRAP, text: '❌ AVOID:\nWill appear after reading.' })
+    createWidget(widget.FILL_RECT, { x: 15, y: 2550, w: 360, h: 320, color: 0x7f1d1d, radius: 12 }) 
+    this.state.avoidWidget = createWidget(widget.TEXT, { x: 25, y: 2565, w: 340, h: 290, color: 0xfecaca, text_size: 20, text_style: text_style.WRAP, text: '❌ AVOID:\nWill appear after reading.' })
 
-    createWidget(widget.FILL_RECT, { x: 0, y: 2850, w: 390, h: 20, color: 0x000000 })
+    createWidget(widget.FILL_RECT, { x: 0, y: 2910, w: 390, h: 20, color: 0x000000 })
 
     this.startHeartRateMonitoring()
   },
@@ -127,20 +177,21 @@ Page({
       this.state.doshaMainWidget.setProperty(prop.TEXT, analysis.title)
       this.state.doshaDetailWidget.setProperty(prop.TEXT, analysis.detail)
       
-      this.state.raktaBar.setProperty(prop.W, Math.floor(340 * (analysis.raktaScore / 100)))
-      this.state.raktaWidget.setProperty(prop.TEXT, `${analysis.raktaScore}% Vitality`)
-      
-      this.state.majjaBar.setProperty(prop.W, Math.floor(340 * (analysis.majjaScore / 100)))
-      this.state.majjaWidget.setProperty(prop.TEXT, `${analysis.majjaScore}% Resilience`)
-      
-      this.state.rasaBar.setProperty(prop.W, Math.floor(340 * (analysis.rasaScore / 100)))
-      this.state.rasaWidget.setProperty(prop.TEXT, `${analysis.rasaScore}% Hydration/Flow`)
+      // PREP THE REVEAL BUTTON
+      this.state.currentAnalysis = analysis
+      this.state.dhatusReady = true
+      this.state.revealBtn.setProperty(prop.TEXT, '✨ REVEAL DHATUS ✨')
+      this.state.revealBtn.setProperty(prop.COLOR, 0xffffff)
+      this.state.revealBtn.setProperty(prop.NORMAL_COLOR, 0x8b5cf6) // Purple
+      this.state.revealBtn.setProperty(prop.PRESS_COLOR, 0x5b21b6)
 
       this.state.symptomWidget.setProperty(prop.TEXT, analysis.symptoms)
       this.state.todoWidget.setProperty(prop.TEXT, `✅ RECOMMENDED:\n\n${analysis.todos}`)
       this.state.avoidWidget.setProperty(prop.TEXT, `❌ PLEASE AVOID:\n\n${analysis.avoids}`)
       
-      this.saveToHistory(analysis)
+      setTimeout(() => {
+        this.saveToHistory(analysis)
+      }, 1000)
     }
   },
 
@@ -169,7 +220,7 @@ Page({
       for (let i = 0; i < history.length; i++) {
         try { localStorage.setItem('t_log_' + i, history[i]) } catch(e) {}
       }
-      showToast({ content: "Data Saved!" })
+      showToast({ content: "Analysis Complete & Saved!" })
     } catch (e) {}
   },
 
