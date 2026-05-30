@@ -1,16 +1,16 @@
 {
   "configVersion": "v3",
   "app": {
-    "appId": 8675309,
-    "appName": "Tridosha Infer",
+    "appId": 1115695,
+    "appName": "ArogyaPulse",
     "appType": "app",
     "version": {
-      "code": 3,
-      "name": "3.0.0"
+      "code": 1,
+      "name": "1.0.0"
     },
     "icon": "icon.png",
-    "vender": "Personal",
-    "description": "Tridosha & Ojas Tracker"
+    "vender": "Pradhan Innovation Labs",
+    "description": "Your personal on-wrist Ayurvedic physician (Vaidya)"
   },
   "permissions": [
     "data:user.hd.heart_rate",
@@ -35,7 +35,7 @@
           ]
         },
         "app-side": {
-          "path": "app-side/index"
+          "path": "app-side/index.js"
         }
       },
       "platforms": [
@@ -50,7 +50,7 @@
   },
   "i18n": {
     "en-US": {
-      "appName": "Tridosha Infer"
+      "appName": "ArogyaPulse"
     }
   },
   "defaultLanguage": "en-US"

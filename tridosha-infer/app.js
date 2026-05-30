@@ -1,9 +1,9 @@
 App({
   globalData: {},
   onCreate(options) {
-    console.log("Tridosha App Initialized");
+    console.log("ArogyaPulse Initialized");
   },
   onDestroy(options) {
-    console.log("Tridosha App Destroyed");
+    console.log("ArogyaPulse Destroyed");
   }
 })
